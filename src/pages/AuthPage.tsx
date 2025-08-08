@@ -209,6 +209,7 @@ const AuthPage: React.FC = () => {
       return;
     }
     localStorage.setItem("token", "ok");
+    localStorage.setItem("user", JSON.stringify(formData));
     navigate("/app");
   };
 

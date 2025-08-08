@@ -1,478 +1,1150 @@
-import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+/* eslint-disable */
+// @ts-nocheck
+import React, { useState, useEffect } from 'react';
 import {
-  Plus,
   Calendar,
   MapPin,
   Users,
-  LogOut,
-  MessageCircle,
-  User,
-  Dumbbell,
+  Clock,
+  Plus,
   Check,
+  X,
+  User,
+  Home,
+  PlusCircle,
+  UserCircle,
+  Search,
+  Filter,
+  Bell,
   ChevronRight,
-} from "lucide-react";
+  MessageCircle,
+  Send,
+  Camera,
+  Inbox,
+  ArrowLeft
+} from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
-// ---- Types ----
-type Sport =
-  | "Tenis"
-  | "Basketbol"
-  | "Futbol"
-  | "Voleybol"
-  | "Yüzme"
-  | "Koşu"
-  | "Bisiklet"
-  | "Yoga"
-  | "Masa Tenisi"
-  | "Badminton"
-  | "Golf"
-  | "Boks"
-  | "Dans"
-  | "Kayak";
+const SportsApp = () => {
+  const navigate = useNavigate();
+  const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
 
-type ActivityLevel = "Başlangıç" | "Orta" | "İleri";
-
-type Activity = {
-  id: string;
-  title: string;
-  date: string; // ISO
-  city: string;
-  sport: Sport;
-  level: ActivityLevel;
-  players: number;
-  maxPlayers: number;
-};
-
-type Message = {
-  id: string;
-  from: string;
-  text: string;
-  date: string; // ISO
-};
-
-// ---- Demo data ----
-const SPORT_EMOJI: Record<Sport, string> = {
-  Tenis: "🎾",
-  Basketbol: "🏀",
-  Futbol: "⚽",
-  Voleybol: "🏐",
-  Yüzme: "🏊",
-  Koşu: "🏃",
-  Bisiklet: "🚴",
-  Yoga: "🧘",
-  "Masa Tenisi": "🏓",
-  Badminton: "🏸",
-  Golf: "⛳",
-  Boks: "🥊",
-  Dans: "💃",
-  Kayak: "⛷️",
-};
-
-const CITIES = ["İstanbul (Avrupa)", "İstanbul (Asya)", "Ankara", "İzmir"] as const;
-const LEVELS: ActivityLevel[] = ["Başlangıç", "Orta", "İleri"];
-const SPORTS = Object.keys(SPORT_EMOJI) as Sport[];
-
-function uid() {
-  return Math.random().toString(36).slice(2, 10);
-}
-
-export default function AppHome() {
-  const nav = useNavigate();
-
-  // ---- Auth guard ----
-  useEffect(() => {
-    if (!localStorage.getItem("token")) nav("/");
-  }, [nav]);
-
-  function logout() {
-    localStorage.removeItem("token");
-    nav("/");
-  }
-
-  // ---- Tabs ----
-  type Tab = "activities" | "messages" | "profile";
-  const [tab, setTab] = useState<Tab>("activities");
-
-  // ---- State: activities (in-memory) ----
-  const [activities, setActivities] = useState<Activity[]>([
-    {
-      id: uid(),
-      title: "Pazar Tenisi Maçı",
-      date: new Date().toISOString(),
-      city: "İstanbul (Avrupa)",
-      sport: "Tenis",
-      level: "Orta",
-      players: 3,
-      maxPlayers: 4,
-    },
-    {
-      id: uid(),
-      title: "Akşam Koşusu",
-      date: new Date(Date.now() + 86400000).toISOString(),
-      city: "İzmir",
-      sport: "Koşu",
-      level: "Başlangıç",
-      players: 5,
-      maxPlayers: 10,
-    },
-  ]);
-
-  // ---- State: messages (in-memory) ----
-  const [messages] = useState<Message[]>([
-    {
-      id: uid(),
-      from: "Ece",
-      text: "Pazar tenis için raket getiriyor musun?",
-      date: new Date().toISOString(),
-    },
-    {
-      id: uid(),
-      from: "Mert",
-      text: "Koşu temposu 6:00/km uygun mu?",
-      date: new Date(Date.now() - 3600_000).toISOString(),
-    },
-  ]);
-
-  // ---- New activity form ----
-  const [form, setForm] = useState<Omit<Activity, "id" | "players">>({
-    title: "",
-    date: "",
-    city: "",
-    sport: "Tenis",
-    level: "Başlangıç",
-    maxPlayers: 4,
+  const [currentUser, setCurrentUser] = useState({
+    id: 1,
+    name: storedUser.name || 'Mehmet Yılmaz',
+    avatar: '👤',
+    profileImage: null,
+    email: storedUser.email || '',
+    city: storedUser.city || '',
+    birthDate: storedUser.birthDate || '',
+    favoriteSports: storedUser.favoriteSports || []
   });
-  const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const upcoming = useMemo(
-    () =>
-      [...activities].sort(
-        (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
-      ),
-    [activities]
-  );
+  const [currentView, setCurrentView] = useState('home');
+  const [selectedChat, setSelectedChat] = useState(null);
 
-  function joinActivity(id: string) {
-    setActivities((prev) =>
-      prev.map((a) =>
-        a.id === id && a.players < a.maxPlayers
-          ? { ...a, players: a.players + 1 }
-          : a
-      )
+  useEffect(() => {
+    if (!localStorage.getItem('token')) {
+      navigate('/');
+    }
+  }, [navigate]);
+
+  const sportEmojis = {
+    'Tenis': '🎾',
+    'Basketbol': '🏀',
+    'Futbol': '⚽',
+    'Voleybol': '🏐',
+    'Yüzme': '🏊',
+    'Koşu': '🏃',
+    'Bisiklet': '🚴',
+    'Yoga': '🧘',
+    'Masa Tenisi': '🏓',
+    'Badminton': '🏸',
+    'Golf': '⛳',
+    'Boks': '🥊',
+    'Dans': '💃',
+    'Kayak': '⛷️'
+  };
+
+  const sports = Object.keys(sportEmojis);
+
+  const cities = [
+    'İstanbul (Avrupa)',
+    'İstanbul (Asya)',
+    'Ankara',
+    'İzmir'
+  ];
+
+  const [messages, setMessages] = useState([
+    {
+      id: 1,
+      chatId: 'chat_1',
+      activityId: 1,
+      activityTitle: 'Sabah Tenis Maçı',
+      participants: [
+        { id: 1, name: 'Mehmet Yılmaz', avatar: '👤' },
+        { id: 2, name: 'Ayşe Kaya', avatar: '👩' }
+      ],
+      messages: [
+        { senderId: 1, text: 'Merhaba, aktiviteniz için raket getirmem gerekiyor mu?', timestamp: '2025-02-08T10:00:00' },
+        { senderId: 2, text: 'Merhaba! Evet, raket getirmeniz gerekiyor. Top bizde var.', timestamp: '2025-02-08T10:05:00' },
+        { senderId: 1, text: 'Tamam, teşekkürler! Görüşmek üzere 👍', timestamp: '2025-02-08T10:06:00' }
+      ],
+      lastMessage: 'Tamam, teşekkürler! Görüşmek üzere 👍',
+      lastMessageTime: '2025-02-08T10:06:00',
+      unread: false
+    },
+    {
+      id: 2,
+      chatId: 'chat_2',
+      activityId: 3,
+      activityTitle: 'Yoga Seansı',
+      participants: [
+        { id: 1, name: 'Mehmet Yılmaz', avatar: '👤' },
+        { id: 9, name: 'Elif Yılmaz', avatar: '👩‍🦱' }
+      ],
+      messages: [
+        { senderId: 9, text: 'Merhaba, yoga matınız var mı?', timestamp: '2025-02-08T09:00:00' },
+        { senderId: 1, text: 'Merhaba, hayır maalesef yok', timestamp: '2025-02-08T09:10:00' },
+        { senderId: 9, text: 'Sorun değil, size yedek mat getirebilirim 😊', timestamp: '2025-02-08T09:15:00' }
+      ],
+      lastMessage: 'Sorun değil, size yedek mat getirebilirim 😊',
+      lastMessageTime: '2025-02-08T09:15:00',
+      unread: true
+    }
+  ]);
+
+  const [newMessage, setNewMessage] = useState('');
+  const [unreadMessages, setUnreadMessages] = useState(1);
+
+  const [notifications, setNotifications] = useState([
+    {
+      id: 1,
+      type: 'request_received',
+      message: 'Ali Demir "Sabah Tenis Maçı" aktivitenize katılmak istiyor',
+      activityId: 1,
+      userId: 3,
+      read: false,
+      timestamp: '2025-02-08T10:30:00',
+      sportEmoji: '🎾'
+    },
+    {
+      id: 2,
+      type: 'request_accepted',
+      message: 'Yoga Seansı aktivitesine katılım isteğiniz onaylandı!',
+      activityId: 3,
+      read: false,
+      timestamp: '2025-02-08T09:15:00',
+      sportEmoji: '🧘'
+    },
+    {
+      id: 3,
+      type: 'request_rejected',
+      message: 'Futbol Maçı aktivitesine katılım isteğiniz reddedildi',
+      activityId: 4,
+      read: true,
+      timestamp: '2025-02-07T18:00:00',
+      sportEmoji: '⚽'
+    }
+  ]);
+
+  const [activities, setActivities] = useState([
+    {
+      id: 1,
+      sport: 'Tenis',
+      title: 'Sabah Tenis Maçı',
+      date: '2025-02-10',
+      time: '09:00',
+      location: 'Ankara Tenis Kulübü',
+      city: 'Ankara',
+      maxParticipants: 4,
+      currentParticipants: 2,
+      createdBy: { id: 2, name: 'Ayşe Kaya', avatar: '👩' },
+      participants: [{ id: 2, name: 'Ayşe Kaya', avatar: '👩' }],
+      requests: [{ id: 3, name: 'Ali Demir', avatar: '👨', status: 'pending' }],
+      description: 'Orta seviye tenis maçı, raket getirilmeli'
+    },
+    {
+      id: 2,
+      sport: 'Basketbol',
+      title: '3v3 Basketbol',
+      date: '2025-02-12',
+      time: '18:00',
+      location: 'Kadıköy Spor Salonu',
+      city: 'İstanbul (Asya)',
+      maxParticipants: 6,
+      currentParticipants: 4,
+      createdBy: { id: 1, name: 'Mehmet Yılmaz', avatar: '👤' },
+      participants: [
+        { id: 1, name: 'Mehmet Yılmaz', avatar: '👤' },
+        { id: 4, name: 'Can Öz', avatar: '🧑' },
+        { id: 5, name: 'Zeynep Ak', avatar: '👩‍🦰' },
+        { id: 6, name: 'Emre Yıldız', avatar: '👨‍🦱' }
+      ],
+      requests: [
+        { id: 7, name: 'Selin Güneş', avatar: '👩‍🦳', status: 'pending' },
+        { id: 8, name: 'Burak Ay', avatar: '🧔', status: 'pending' }
+      ],
+      description: 'Dostane 3v3 basketbol maçı'
+    },
+    {
+      id: 3,
+      sport: 'Yoga',
+      title: 'Sabah Yoga Seansı',
+      date: '2025-02-11',
+      time: '07:00',
+      location: 'Maçka Parkı',
+      city: 'İstanbul (Avrupa)',
+      maxParticipants: 10,
+      currentParticipants: 6,
+      createdBy: { id: 9, name: 'Elif Yılmaz', avatar: '👩‍🦱' },
+      participants: [
+        { id: 9, name: 'Elif Yılmaz', avatar: '👩‍🦱' },
+        { id: 10, name: 'Merve Kara', avatar: '👩' },
+        { id: 11, name: 'Ahmet Şen', avatar: '👨' },
+        { id: 12, name: 'Ceren Ak', avatar: '👩‍🦰' },
+        { id: 13, name: 'Murat Can', avatar: '🧔' }
+      ],
+      requests: [],
+      description: 'Hatha yoga seansı, mat getirilmeli'
+    },
+    {
+      id: 4,
+      sport: 'Futbol',
+      title: 'Halı Saha Maçı',
+      date: '2025-02-13',
+      time: '20:00',
+      location: 'Bornova Halı Saha',
+      city: 'İzmir',
+      maxParticipants: 10,
+      currentParticipants: 7,
+      createdBy: { id: 14, name: 'Kaan Yıldırım', avatar: '👨‍🦱' },
+      participants: [
+        { id: 14, name: 'Kaan Yıldırım', avatar: '👨‍🦱' },
+        { id: 15, name: 'Arda Turan', avatar: '🧔' },
+        { id: 16, name: 'Selim Ak', avatar: '👨' },
+        { id: 17, name: 'Mert Can', avatar: '👦' },
+        { id: 18, name: 'Cem Yılmaz', avatar: '👨‍🦲' },
+        { id: 19, name: 'Ozan Kabak', avatar: '🧑' },
+        { id: 20, name: 'Barış Alper', avatar: '👨‍🦰' }
+      ],
+      requests: [],
+      description: '5v5 halı saha maçı, forma getirilmeli'
+    }
+  ]);
+
+  const [filterSport, setFilterSport] = useState('all');
+  const [filterCity, setFilterCity] = useState('all');
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const [newActivity, setNewActivity] = useState({
+    sport: 'Tenis',
+    title: '',
+    date: '',
+    time: '',
+    location: '',
+    city: 'Ankara',
+    maxParticipants: 2,
+    description: ''
+  });
+
+  const unreadNotifications = notifications.filter(n => !n.read).length;
+
+  const handleProfileImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setCurrentUser({ ...currentUser, profileImage: reader.result });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleSendMessage = (activity) => {
+    const existingChat = messages.find(m =>
+      m.activityId === activity.id &&
+      m.participants.some(p => p.id === activity.createdBy.id)
     );
-  }
 
-  function validate(): boolean {
-    const e: Record<string, string> = {};
-    if (!form.title.trim()) e.title = "Başlık zorunlu";
-    if (!form.date) e.date = "Tarih zorunlu";
-    if (!form.city) e.city = "Şehir seçilmelidir";
-    if (!form.maxPlayers || form.maxPlayers < 2) e.maxPlayers = "En az 2 kişi";
-    setErrors(e);
-    return Object.keys(e).length === 0;
-  }
+    if (existingChat) {
+      setSelectedChat(existingChat);
+      setCurrentView('chat');
+    } else {
+      const newChat = {
+        id: messages.length + 1,
+        chatId: `chat_${messages.length + 1}`,
+        activityId: activity.id,
+        activityTitle: activity.title,
+        participants: [
+          currentUser,
+          activity.createdBy
+        ],
+        messages: [],
+        lastMessage: '',
+        lastMessageTime: new Date().toISOString(),
+        unread: false
+      };
+      setMessages([...messages, newChat]);
+      setSelectedChat(newChat);
+      setCurrentView('chat');
+    }
+  };
 
-  function createActivity(ev: React.FormEvent) {
-    ev.preventDefault();
-    if (!validate()) return;
-    const newAct: Activity = {
-      id: uid(),
-      title: form.title.trim(),
-      date: form.date,
-      city: form.city,
-      sport: form.sport,
-      level: form.level,
-      players: 1,
-      maxPlayers: form.maxPlayers,
-    };
-    setActivities((p) => [newAct, ...p]);
-    setForm({
-      title: "",
-      date: "",
-      city: "",
-      sport: "Tenis",
-      level: "Başlangıç",
-      maxPlayers: 4,
+  const sendMessage = () => {
+    if (!newMessage.trim() || !selectedChat) return;
+
+    const updatedMessages = messages.map(chat => {
+      if (chat.chatId === selectedChat.chatId) {
+        const newMsg = {
+          senderId: currentUser.id,
+          text: newMessage,
+          timestamp: new Date().toISOString()
+        };
+        return {
+          ...chat,
+          messages: [...chat.messages, newMsg],
+          lastMessage: newMessage,
+          lastMessageTime: new Date().toISOString(),
+          unread: false
+        };
+      }
+      return chat;
     });
-    setTab("activities");
-  }
 
-  // ---- UI ----
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      <header className="sticky top-0 z-10 bg-white/80 backdrop-blur border-b">
-        <div className="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-2 font-bold text-xl">
-            <Dumbbell className="w-6 h-6" />
-            Aktifite
-          </div>
-          <button
-            onClick={logout}
-            className="inline-flex items-center gap-2 px-3 py-2 border rounded-lg hover:bg-gray-50"
-          >
-            <LogOut className="w-4 h-4" />
-            Çıkış
-          </button>
-        </div>
-      </header>
+    setMessages(updatedMessages);
+    const updatedChat = updatedMessages.find(m => m.chatId === selectedChat.chatId);
+    setSelectedChat(updatedChat);
+    setNewMessage('');
+  };
 
-      <main className="max-w-3xl mx-auto p-4 space-y-4">
-        {/* Tabs */}
-        <div className="grid grid-cols-3 bg-white rounded-xl shadow p-1">
-          <button
-            onClick={() => setTab("activities")}
-            className={`py-2 rounded-lg font-medium ${
-              tab === "activities" ? "bg-blue-600 text-white" : "text-gray-700"
-            }`}
-          >
-            Aktiviteler
-          </button>
-          <button
-            onClick={() => setTab("messages")}
-            className={`py-2 rounded-lg font-medium ${
-              tab === "messages" ? "bg-blue-600 text-white" : "text-gray-700"
-            }`}
-          >
-            Mesajlar
-          </button>
-          <button
-            onClick={() => setTab("profile")}
-            className={`py-2 rounded-lg font-medium ${
-              tab === "profile" ? "bg-blue-600 text-white" : "text-gray-700"
-            }`}
-          >
-            Profil
-          </button>
-        </div>
+  const handleCreateActivity = () => {
+    if (!newActivity.title || !newActivity.date || !newActivity.time || !newActivity.location) {
+      alert('Lütfen tüm gerekli alanları doldurun!');
+      return;
+    }
 
-        {/* Activities */}
-        {tab === "activities" && (
-          <section className="space-y-4">
-            {/* Create form */}
-            <details className="bg-white rounded-xl shadow">
-              <summary className="cursor-pointer list-none px-4 py-3 flex items-center justify-between">
-                <div className="flex items-center gap-2 font-medium">
-                  <Plus className="w-4 h-4" /> Yeni Aktivite Oluştur
-                </div>
-                <ChevronRight className="w-4 h-4 opacity-60 group-open:rotate-90 transition-transform" />
-              </summary>
-              <form onSubmit={createActivity} className="px-4 pb-4 grid gap-3 md:grid-cols-2">
-                <div className="md:col-span-2">
-                  <label className="text-sm text-gray-700">Başlık</label>
-                  <input
-                    className={`w-full mt-1 border rounded-lg p-2 ${errors.title ? "border-red-500" : ""}`}
-                    value={form.title}
-                    onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))}
-                    placeholder="Örn: Pazar Tenisi Maçı"
-                  />
-                  {errors.title && <p className="text-xs text-red-600 mt-1">{errors.title}</p>}
-                </div>
+    const activity = {
+      id: activities.length + 1,
+      ...newActivity,
+      currentParticipants: 1,
+      createdBy: currentUser,
+      participants: [currentUser],
+      requests: [],
+      maxParticipants: parseInt(newActivity.maxParticipants)
+    };
 
-                <div>
-                  <label className="text-sm text-gray-700 flex items-center gap-1">
-                    <Calendar className="w-4 h-4" /> Tarih / Saat
-                  </label>
-                  <input
-                    type="datetime-local"
-                    className={`w-full mt-1 border rounded-lg p-2 ${errors.date ? "border-red-500" : ""}`}
-                    value={form.date}
-                    onChange={(e) => setForm((p) => ({ ...p, date: e.target.value }))}
-                  />
-                  {errors.date && <p className="text-xs text-red-600 mt-1">{errors.date}</p>}
-                </div>
+    setActivities([...activities, activity]);
 
-                <div>
-                  <label className="text-sm text-gray-700 flex items-center gap-1">
-                    <MapPin className="w-4 h-4" /> Şehir
-                  </label>
-                  <select
-                    className={`w-full mt-1 border rounded-lg p-2 ${errors.city ? "border-red-500" : ""}`}
-                    value={form.city}
-                    onChange={(e) => setForm((p) => ({ ...p, city: e.target.value }))}
-                  >
-                    <option value="">Seçin</option>
-                    {CITIES.map((c) => (
-                      <option key={c} value={c}>
-                        {c}
-                      </option>
-                    ))}
-                  </select>
-                  {errors.city && <p className="text-xs text-red-600 mt-1">{errors.city}</p>}
-                </div>
+    const newNotification = {
+      id: notifications.length + 1,
+      type: 'activity_created',
+      message: `"${newActivity.title}" aktivitesi başarıyla oluşturuldu!`,
+      activityId: activity.id,
+      read: false,
+      timestamp: new Date().toISOString(),
+      sportEmoji: sportEmojis[newActivity.sport]
+    };
+    setNotifications([newNotification, ...notifications]);
 
-                <div>
-                  <label className="text-sm text-gray-700">Spor</label>
-                  <select
-                    className="w-full mt-1 border rounded-lg p-2"
-                    value={form.sport}
-                    onChange={(e) => setForm((p) => ({ ...p, sport: e.target.value as Sport }))}
-                  >
-                    {SPORTS.map((s) => (
-                      <option key={s} value={s}>
-                        {SPORT_EMOJI[s]} {s}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+    setNewActivity({
+      sport: 'Tenis',
+      title: '',
+      date: '',
+      time: '',
+      location: '',
+      city: 'Ankara',
+      maxParticipants: 2,
+      description: ''
+    });
+    setCurrentView('home');
+  };
 
-                <div>
-                  <label className="text-sm text-gray-700">Seviye</label>
-                  <select
-                    className="w-full mt-1 border rounded-lg p-2"
-                    value={form.level}
-                    onChange={(e) => setForm((p) => ({ ...p, level: e.target.value as ActivityLevel }))}
-                  >
-                    {LEVELS.map((l) => (
-                      <option key={l} value={l}>
-                        {l}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+  const handleJoinRequest = (activityId) => {
+    const activity = activities.find(a => a.id === activityId);
 
-                <div>
-                  <label className="text-sm text-gray-700 flex items-center gap-1">
-                    <Users className="w-4 h-4" /> Kontenjan
-                  </label>
-                  <input
-                    type="number"
-                    min={2}
-                    className={`w-full mt-1 border rounded-lg p-2 ${errors.maxPlayers ? "border-red-500" : ""}`}
-                    value={form.maxPlayers}
-                    onChange={(e) =>
-                      setForm((p) => ({ ...p, maxPlayers: Number(e.target.value || 0) }))
-                    }
-                  />
-                  {errors.maxPlayers && <p className="text-xs text-red-600 mt-1">{errors.maxPlayers}</p>}
-                </div>
+    setActivities(activities.map(act => {
+      if (act.id === activityId) {
+        const isAlreadyParticipant = act.participants.some(p => p.id === currentUser.id);
+        const hasAlreadyRequested = act.requests.some(r => r.id === currentUser.id);
 
-                <div className="md:col-span-2 flex justify-end gap-2">
-                  <button
-                    type="reset"
-                    onClick={() =>
-                      setForm({
-                        title: "",
-                        date: "",
-                        city: "",
-                        sport: "Tenis",
-                        level: "Başlangıç",
-                        maxPlayers: 4,
-                      })
-                    }
-                    className="px-3 py-2 border rounded-lg"
-                  >
-                    Temizle
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700"
-                  >
-                    Oluştur
-                  </button>
-                </div>
-              </form>
-            </details>
+        if (!isAlreadyParticipant && !hasAlreadyRequested && act.currentParticipants < act.maxParticipants) {
+          const newNotification = {
+            id: notifications.length + 1,
+            type: 'request_sent',
+            message: `"${activity.title}" aktivitesine katılım isteği gönderildi`,
+            activityId: activityId,
+            read: false,
+            timestamp: new Date().toISOString(),
+            sportEmoji: sportEmojis[activity.sport]
+          };
+          setNotifications([newNotification, ...notifications]);
 
-            {/* List */}
-            <div className="grid gap-3">
-              {upcoming.map((a) => (
-                <div key={a.id} className="bg-white rounded-xl shadow p-4">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <div className="text-lg font-semibold flex items-center gap-2">
-                        <span>{SPORT_EMOJI[a.sport]}</span> {a.title}
-                      </div>
-                      <div className="mt-1 text-sm text-gray-600 flex flex-wrap gap-3">
-                        <span className="inline-flex items-center gap-1">
-                          <Calendar className="w-4 h-4" />
-                          {new Date(a.date).toLocaleString()}
-                        </span>
-                        <span className="inline-flex items-center gap-1">
-                          <MapPin className="w-4 h-4" />
-                          {a.city}
-                        </span>
-                        <span className="inline-flex items-center gap-1">
-                          <User className="w-4 h-4" />
-                          {a.level}
-                        </span>
-                        <span className="inline-flex items-center gap-1">
-                          <Users className="w-4 h-4" />
-                          {a.players}/{a.maxPlayers}
-                        </span>
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => joinActivity(a.id)}
-                      disabled={a.players >= a.maxPlayers}
-                      className={`px-3 py-2 rounded-lg text-sm font-medium ${
-                        a.players >= a.maxPlayers
-                          ? "bg-gray-200 text-gray-500 cursor-not-allowed"
-                          : "bg-green-600 text-white hover:bg-green-700"
-                      }`}
-                    >
-                      {a.players >= a.maxPlayers ? "Dolu" : "Katıl"}
-                    </button>
-                  </div>
-                </div>
-              ))}
-              {upcoming.length === 0 && (
-                <div className="bg-white rounded-xl shadow p-6 text-center text-gray-600">
-                  Henüz aktivite yok. Hadi bir tane oluştur! ✨
-                </div>
-              )}
+          return {
+            ...act,
+            requests: [...act.requests, { ...currentUser, status: 'pending' }]
+          };
+        }
+      }
+      return act;
+    }));
+  };
+
+  const handleAcceptRequest = (activityId, userId) => {
+    const activity = activities.find(a => a.id === activityId);
+    const user = activity.requests.find(r => r.id === userId);
+
+    setActivities(activities.map(act => {
+      if (act.id === activityId) {
+        const request = act.requests.find(r => r.id === userId);
+        if (request && act.currentParticipants < act.maxParticipants) {
+          const newNotification = {
+            id: notifications.length + 1,
+            type: 'request_accepted',
+            message: `${user.name} "${activity.title}" aktivitesine kabul edildi`,
+            activityId: activityId,
+            read: false,
+            timestamp: new Date().toISOString(),
+            sportEmoji: sportEmojis[activity.sport]
+          };
+          setNotifications([newNotification, ...notifications]);
+
+          return {
+            ...act,
+            participants: [...act.participants, { id: request.id, name: request.name, avatar: request.avatar }],
+            requests: act.requests.filter(r => r.id !== userId),
+            currentParticipants: act.currentParticipants + 1
+          };
+        }
+      }
+      return act;
+    }));
+  };
+
+  const handleRejectRequest = (activityId, userId) => {
+    const activity = activities.find(a => a.id === activityId);
+    const user = activity.requests.find(r => r.id === userId);
+
+    setActivities(activities.map(act => {
+      if (act.id === activityId) {
+        const newNotification = {
+          id: notifications.length + 1,
+          type: 'request_rejected',
+          message: `${user.name} "${activity.title}" aktivitesine reddedildi`,
+          activityId: activityId,
+          read: false,
+          timestamp: new Date().toISOString(),
+          sportEmoji: sportEmojis[activity.sport]
+        };
+        setNotifications([newNotification, ...notifications]);
+
+        return {
+          ...act,
+          requests: act.requests.filter(r => r.id !== userId)
+        };
+      }
+      return act;
+    }));
+  };
+
+  const markNotificationAsRead = (notificationId) => {
+    setNotifications(notifications.map(n =>
+      n.id === notificationId ? { ...n, read: true } : n
+    ));
+  };
+
+  const markAllNotificationsAsRead = () => {
+    setNotifications(notifications.map(n => ({ ...n, read: true })));
+  };
+
+  const getTimeAgo = (timestamp) => {
+    const now = new Date();
+    const date = new Date(timestamp);
+    const diff = Math.floor((now - date) / 1000);
+
+    if (diff < 60) return 'Az önce';
+    if (diff < 3600) return `${Math.floor(diff / 60)} dakika önce`;
+    if (diff < 86400) return `${Math.floor(diff / 3600)} saat önce`;
+    if (diff < 604800) return `${Math.floor(diff / 86400)} gün önce`;
+    return date.toLocaleDateString('tr-TR');
+  };
+
+  const filteredActivities = activities.filter(activity => {
+    const matchesSport = filterSport === 'all' || activity.sport === filterSport;
+    const matchesCity = filterCity === 'all' || activity.city === filterCity;
+    const matchesSearch = activity.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          activity.sport.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          activity.location.toLowerCase().includes(searchTerm.toLowerCase());
+    return matchesSport && matchesCity && matchesSearch;
+  });
+
+  const ActivityCard = ({ activity }) => {
+    const isCreator = activity.createdBy.id === currentUser.id;
+    const isParticipant = activity.participants.some(p => p.id === currentUser.id);
+    const hasRequested = activity.requests.some(r => r.id === currentUser.id);
+    const isFull = activity.currentParticipants >= activity.maxParticipants;
+
+    return (
+      <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 mb-4 hover:shadow-xl transition-shadow">
+        <div className="flex justify-between items-start mb-3 sm:mb-4">
+          <div className="flex-1">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-2xl sm:text-3xl">{sportEmojis[activity.sport]}</span>
+              <span className="inline-block px-2 sm:px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs sm:text-sm font-semibold">
+                {activity.sport}
+              </span>
             </div>
-          </section>
-        )}
+            <h3 className="text-lg sm:text-xl font-bold text-gray-900">{activity.title}</h3>
+            <p className="text-gray-600 text-xs sm:text-sm mt-1">{activity.description}</p>
+          </div>
+          {isCreator && (
+            <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-[10px] sm:text-xs font-semibold">
+              Organizatör
+            </span>
+          )}
+        </div>
 
-        {/* Messages */}
-        {tab === "messages" && (
-          <section className="space-y-3">
-            {messages.map((m) => (
-              <div key={m.id} className="bg-white rounded-xl shadow p-4 flex gap-3">
-                <div className="w-10 h-10 rounded-full bg-blue-100 grid place-items-center text-blue-700">
-                  <MessageCircle className="w-5 h-5" />
+        <div className="space-y-1.5 sm:space-y-2 text-gray-700">
+          <div className="flex items-center gap-2">
+            <Calendar className="w-3 h-3 sm:w-4 sm:h-4 text-gray-500" />
+            <span className="text-xs sm:text-sm">{new Date(activity.date).toLocaleDateString('tr-TR')}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Clock className="w-3 h-3 sm:w-4 sm:h-4 text-gray-500" />
+            <span className="text-xs sm:text-sm">{activity.time}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <MapPin className="w-3 h-3 sm:w-4 sm:h-4 text-gray-500" />
+            <span className="text-xs sm:text-sm">{activity.location}</span>
+            <span className="text-[10px] sm:text-xs text-gray-500">({activity.city})</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Users className="w-3 h-3 sm:w-4 sm:h-4 text-gray-500" />
+            <span className="text-xs sm:text-sm">{activity.currentParticipants}/{activity.maxParticipants} Katılımcı</span>
+          </div>
+        </div>
+
+        <div className="mt-4 pt-4 border-t">
+          <p className="text-xs text-gray-600 mb-2">Katılımcılar:</p>
+          <div className="flex gap-2 flex-wrap">
+            {activity.participants.map(p => (
+              <div key={p.id} className="flex items-center gap-1 bg-gray-100 px-2 py-1 rounded-full">
+                <span className="text-lg">{p.avatar}</span>
+                <span className="text-xs">{p.name}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {isCreator && activity.requests.length > 0 && (
+          <div className="mt-4 pt-4 border-t">
+            <p className="text-sm font-semibold text-gray-700 mb-2">Katılım İstekleri ({activity.requests.length}):</p>
+            {activity.requests.map(request => (
+              <div key={request.id} className="flex items-center justify-between bg-yellow-50 p-2 rounded-lg mb-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">{request.avatar}</span>
+                  <span className="text-sm font-medium">{request.name}</span>
                 </div>
-                <div className="flex-1">
-                  <div className="flex items-center justify-between">
-                    <div className="font-medium">{m.from}</div>
-                    <div className="text-xs text-gray-500">
-                      {new Date(m.date).toLocaleString()}
-                    </div>
-                  </div>
-                  <p className="text-gray-700 mt-1">{m.text}</p>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handleAcceptRequest(activity.id, request.id)}
+                    className="p-1 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+                    disabled={isFull}
+                  >
+                    <Check className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => handleRejectRequest(activity.id, request.id)}
+                    className="p-1 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
                 </div>
               </div>
             ))}
-            {messages.length === 0 && (
-              <div className="bg-white rounded-xl shadow p-6 text-center text-gray-600">
-                Mesaj yok.
-              </div>
-            )}
-          </section>
+          </div>
         )}
 
-        {/* Profile */}
-        {tab === "profile" && (
-          <section className="bg-white rounded-xl shadow p-6 space-y-3">
-            <div className="text-xl font-semibold">Profil</div>
-            <div className="text-gray-600">Bu alanı yakında doldururuz. 🎯</div>
-            <div className="grid sm:grid-cols-2 gap-3">
-              <div className="border rounded-lg p-3">
-                <div className="text-sm text-gray-500">Toplam Aktivite</div>
-                <div className="text-2xl font-bold">{activities.length}</div>
-              </div>
-              <div className="border rounded-lg p-3">
-                <div className="text-sm text-gray-500">Gelen Mesaj</div>
-                <div className="text-2xl font-bold">{messages.length}</div>
-              </div>
-            </div>
-            <div className="flex items-center gap-2 text-green-700">
-              <Check className="w-5 h-5" />
-              Demo verilerle çalışıyor.
-            </div>
-          </section>
+        {!isParticipant && !isCreator && (
+          <div className="flex gap-2 mt-4">
+            {!hasRequested && !isFull && (
+              <button
+                onClick={() => handleJoinRequest(activity.id)}
+                className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center justify-center"
+              >
+                Katılım İsteği Gönder
+              </button>
+            )}
+            <button
+              onClick={() => handleSendMessage(activity)}
+              className="flex-1 flex items-center justify-center gap-2 bg-gray-100 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-200 transition-colors font-medium"
+            >
+              <MessageCircle className="w-4 h-4" />
+              Mesaj At
+            </button>
+          </div>
         )}
-      </main>
+
+        {hasRequested && (
+          <div className="mt-4 flex items-center justify-between">
+            <div className="text-sm text-yellow-600 font-medium">
+              ⏳ Katılım isteğiniz bekleniyor
+            </div>
+            <button
+              onClick={() => handleSendMessage(activity)}
+              className="flex items-center gap-2 text-sm bg-gray-100 text-gray-700 py-1 px-3 rounded-lg hover:bg-gray-200"
+            >
+              <MessageCircle className="w-3 h-3" />
+              Mesaj
+            </button>
+          </div>
+        )}
+
+        {isParticipant && !isCreator && (
+          <div className="mt-4 flex items-center justify-between">
+            <div className="text-sm text-green-600 font-medium">
+              ✅ Katılımcısınız
+            </div>
+            <button
+              onClick={() => handleSendMessage(activity)}
+              className="flex items-center gap-2 text-sm bg-gray-100 text-gray-700 py-1 px-3 rounded-lg hover:bg-gray-200"
+            >
+              <MessageCircle className="w-3 h-3" />
+              Mesaj
+            </button>
+          </div>
+        )}
+
+        {isFull && !isParticipant && !isCreator && (
+          <div className="mt-4 flex items-center justify-between">
+            <div className="text-sm text-red-600 font-medium">
+              🚫 Aktivite dolu
+            </div>
+            <button
+              onClick={() => handleSendMessage(activity)}
+              className="flex items-center gap-2 text-sm bg-gray-100 text-gray-700 py-1 px-3 rounded-lg hover:bg-gray-200"
+            >
+              <MessageCircle className="w-3 h-3" />
+              Soru Sor
+            </button>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+      <div className="max-w-4xl mx-auto p-4">
+        <header className="bg-white rounded-2xl shadow-lg p-4 sm:p-6 mb-4 sm:mb-6">
+          <div className="flex justify-between items-center">
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 flex items-center gap-2">
+              ⚽ AKTİFİTE
+            </h1>
+            <div className="flex items-center gap-2 sm:gap-3">
+              <button
+                onClick={() => setCurrentView('inbox')}
+                className="relative p-1.5 sm:p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <Inbox className="w-5 h-5 sm:w-6 sm:h-6 text-gray-700" />
+                {unreadMessages > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-blue-500 text-white text-xs rounded-full w-4 h-4 sm:w-5 sm:h-5 flex items-center justify-center text-[10px] sm:text-xs">
+                    {unreadMessages}
+                  </span>
+                )}
+              </button>
+              <button
+                onClick={() => setCurrentView('notifications')}
+                className="relative p-1.5 sm:p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <Bell className="w-5 h-5 sm:w-6 sm:h-6 text-gray-700" />
+                {unreadNotifications > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 sm:w-5 sm:h-5 flex items-center justify-center text-[10px] sm:text-xs">
+                    {unreadNotifications}
+                  </span>
+                )}
+              </button>
+              <div className="flex items-center gap-1 sm:gap-2 bg-gray-100 px-2 sm:px-3 py-1.5 sm:py-2 rounded-full">
+                {currentUser.profileImage ? (
+                  <img src={currentUser.profileImage} alt="Profile" className="w-6 h-6 sm:w-8 sm:h-8 rounded-full object-cover" />
+                ) : (
+                  <span className="text-sm sm:text-lg">{currentUser.avatar}</span>
+                )}
+                <span className="font-medium text-gray-800 text-xs sm:text-base hidden sm:inline">{currentUser.name}</span>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        <nav className="bg-white rounded-2xl shadow-lg p-2 mb-4 sm:mb-6 flex gap-1 sm:gap-2">
+          <button
+            onClick={() => setCurrentView('home')}
+            className={`flex-1 flex items-center justify-center gap-1 sm:gap-2 py-2 sm:py-3 px-2 sm:px-4 rounded-xl transition-colors ${
+              currentView === 'home' ? 'bg-blue-600 text-white' : 'hover:bg-gray-100'
+            }`}
+          >
+            <Home className="w-4 h-4 sm:w-5 sm:h-5" />
+            <span className="font-medium text-xs sm:text-base">Aktiviteler</span>
+          </button>
+          <button
+            onClick={() => setCurrentView('create')}
+            className={`flex-1 flex items-center justify-center gap-1 sm:gap-2 py-2 sm:py-3 px-2 sm:px-4 rounded-xl transition-colors ${
+              currentView === 'create' ? 'bg-blue-600 text-white' : 'hover:bg-gray-100'
+            }`}
+          >
+            <PlusCircle className="w-4 h-4 sm:w-5 sm:h-5" />
+            <span className="font-medium text-xs sm:text-base">Oluştur</span>
+          </button>
+          <button
+            onClick={() => setCurrentView('profile')}
+            className={`flex-1 flex items-center justify-center gap-1 sm:gap-2 py-2 sm:py-3 px-2 sm:px-4 rounded-xl transition-colors ${
+              currentView === 'profile' ? 'bg-blue-600 text-white' : 'hover:bg-gray-100'
+            }`}
+          >
+            <UserCircle className="w-4 h-4 sm:w-5 sm:h-5" />
+            <span className="font-medium text-xs sm:text-base">Profilim</span>
+          </button>
+        </nav>
+
+        {currentView === 'home' && (
+          <div>
+            <div className="bg-white rounded-2xl shadow-lg p-3 sm:p-4 mb-4 sm:mb-6">
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+                <div className="flex-1 relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4 sm:w-5 sm:h-5" />
+                  <input
+                    type="text"
+                    placeholder="Aktivite ara..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full pl-9 sm:pl-10 pr-3 sm:pr-4 py-2 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <select
+                    value={filterCity}
+                    onChange={(e) => setFilterCity(e.target.value)}
+                    className="flex-1 sm:flex-none px-3 sm:px-4 py-2 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="all">Tüm Şehirler</option>
+                    {cities.map(city => (
+                      <option key={city} value={city}>{city}</option>
+                    ))}
+                  </select>
+                  <select
+                    value={filterSport}
+                    onChange={(e) => setFilterSport(e.target.value)}
+                    className="flex-1 sm:flex-none px-3 sm:px-4 py-2 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="all">Tüm Sporlar</option>
+                    {sports.map(sport => (
+                      <option key={sport} value={sport}>{sportEmojis[sport]} {sport}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              {filteredActivities.length > 0 ? (
+                filteredActivities.map(activity => (
+                  <ActivityCard key={activity.id} activity={activity} />
+                ))
+              ) : (
+                <div className="bg-white rounded-xl shadow-lg p-12 text-center">
+                  <p className="text-gray-500">Henüz aktivite bulunamadı</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {currentView === 'inbox' && (
+          <div className="bg-white rounded-2xl shadow-lg p-6">
+            <h2 className="text-2xl font-bold text-gray-900 mb-6">💬 Mesajlar</h2>
+            {messages.length > 0 ? (
+              <div className="space-y-3">
+                {messages.map(chat => (
+                  <div
+                    key={chat.id}
+                    onClick={() => {
+                      setSelectedChat(chat);
+                      setCurrentView('chat');
+                    }}
+                    className={`p-4 rounded-lg border cursor-pointer hover:shadow-md transition-all ${
+                      chat.unread ? 'bg-blue-50 border-blue-200' : 'bg-gray-50 border-gray-200'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-gray-900">{chat.activityTitle}</h4>
+                        <p className="text-sm text-gray-600 mt-1">
+                          {chat.participants.find(p => p.id !== currentUser.id)?.name}
+                        </p>
+                        <p className={`text-sm mt-2 ${chat.unread ? 'font-semibold' : 'text-gray-500'}`}>
+                          {chat.lastMessage}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xs text-gray-500">{getTimeAgo(chat.lastMessageTime)}</p>
+                        {chat.unread && (
+                          <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 ml-auto"></div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <MessageCircle className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                <p className="text-gray-500">Henüz mesajınız yok</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {currentView === 'chat' && selectedChat && (
+          <div className="bg-white rounded-2xl shadow-lg">
+            <div className="border-b p-4 flex items-center gap-3">
+              <button
+                onClick={() => setCurrentView('inbox')}
+                className="p-1 hover:bg-gray-100 rounded-lg"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </button>
+              <div className="flex-1">
+                <h3 className="font-semibold text-gray-900">{selectedChat.activityTitle}</h3>
+                <p className="text-sm text-gray-600">
+                  {selectedChat.participants.find(p => p.id !== currentUser.id)?.name}
+                </p>
+              </div>
+            </div>
+
+            <div className="h-96 overflow-y-auto p-4 space-y-3">
+              {selectedChat.messages.map((msg, index) => (
+                <div
+                  key={index}
+                  className={`flex ${msg.senderId === currentUser.id ? 'justify-end' : 'justify-start'}`}
+                >
+                  <div
+                    className={`max-w-xs px-4 py-2 rounded-lg ${
+                      msg.senderId === currentUser.id
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-100 text-gray-900'
+                    }`}
+                  >
+                    <p className="text-sm">{msg.text}</p>
+                    <p className={`text-xs mt-1 ${
+                      msg.senderId === currentUser.id ? 'text-blue-100' : 'text-gray-500'
+                    }`}>
+                      {getTimeAgo(msg.timestamp)}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="border-t p-4">
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={newMessage}
+                  onChange={(e) => setNewMessage(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
+                  placeholder="Mesajınızı yazın..."
+                  className="flex-1 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                />
+                <button
+                  onClick={sendMessage}
+                  className="bg-blue-600 text-white p-2 rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  <Send className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {currentView === 'notifications' && (
+          <div className="bg-white rounded-2xl shadow-lg p-6">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold text-gray-900">🔔 Bildirimler</h2>
+              {unreadNotifications > 0 && (
+                <button
+                  onClick={markAllNotificationsAsRead}
+                  className="text-sm text-blue-600 hover:text-blue-700"
+                >
+                  Tümünü okundu işaretle
+                </button>
+              )}
+            </div>
+
+            {notifications.length > 0 ? (
+              <div className="space-y-3">
+                {notifications.map(notification => (
+                  <div
+                    key={notification.id}
+                    onClick={() => markNotificationAsRead(notification.id)}
+                    className={`p-4 rounded-lg border transition-all cursor-pointer hover:shadow-md ${
+                      !notification.read ? 'bg-blue-50 border-blue-200' : 'bg-gray-50 border-gray-200'
+                    }`}
+                  >
+                    <div className="flex items-start gap-3">
+                      <span className="text-2xl">{notification.sportEmoji}</span>
+                      <div className="flex-1">
+                        <p className={`text-sm ${!notification.read ? 'font-semibold' : ''}`}>
+                          {notification.message}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          {getTimeAgo(notification.timestamp)}
+                        </p>
+                      </div>
+                      {!notification.read && (
+                        <div className="w-2 h-2 bg-blue-500 rounded-full mt-2"></div>
+                      )}
+                    </div>
+                    {notification.type === 'request_accepted' && (
+                      <div className="mt-2 ml-11">
+                        <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
+                          ✅ Onaylandı
+                        </span>
+                      </div>
+                    )}
+                    {notification.type === 'request_rejected' && (
+                      <div className="mt-2 ml-11">
+                        <span className="text-xs bg-red-100 text-red-800 px-2 py-1 rounded-full">
+                          ❌ Reddedildi
+                        </span>
+                      </div>
+                    )}
+                    {notification.type === 'request_received' && (
+                      <div className="mt-2 ml-11">
+                        <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full">
+                          ⏳ Beklemede
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <Bell className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                <p className="text-gray-500">Henüz bildirim yok</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {currentView === 'create' && (
+          <div className="bg-white rounded-2xl shadow-lg p-6">
+            <h2 className="text-2xl font-bold text-gray-900 mb-6">Yeni Aktivite Oluştur</h2>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Spor Türü</label>
+                <div className="relative">
+                  <select
+                    value={newActivity.sport}
+                    onChange={(e) => setNewActivity({...newActivity, sport: e.target.value})}
+                    className="w-full px-4 py-2 pl-12 border rounded-lg focus:ring-2 focus:ring-blue-500 appearance-none"
+                  >
+                    {sports.map(sport => (
+                      <option key={sport} value={sport}>{sport}</option>
+                    ))}
+                  </select>
+                  <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-2xl pointer-events-none">
+                    {sportEmojis[newActivity.sport]}
+                  </span>
+                  <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+                    <ChevronRight className="w-4 h-4 text-gray-400 rotate-90" />
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Başlık</label>
+                <input
+                  type="text"
+                  value={newActivity.title}
+                  onChange={(e) => setNewActivity({...newActivity, title: e.target.value})}
+                  placeholder="örn: Sabah Tenis Maçı"
+                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Açıklama</label>
+                <textarea
+                  value={newActivity.description}
+                  onChange={(e) => setNewActivity({...newActivity, description: e.target.value})}
+                  placeholder="Aktivite hakkında detaylar..."
+                  rows="3"
+                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                <div>
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">Tarih</label>
+                  <input
+                    type="date"
+                    value={newActivity.date}
+                    onChange={(e) => setNewActivity({...newActivity, date: e.target.value})}
+                    className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">Saat</label>
+                  <input
+                    type="time"
+                    value={newActivity.time}
+                    onChange={(e) => setNewActivity({...newActivity, time: e.target.value})}
+                    className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                <div>
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">Şehir</label>
+                  <select
+                    value={newActivity.city}
+                    onChange={(e) => setNewActivity({...newActivity, city: e.target.value})}
+                    className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-blue-500"
+                  >
+                    {cities.map(city => (
+                      <option key={city} value={city}>{city}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">Konum</label>
+                  <input
+                    type="text"
+                    value={newActivity.location}
+                    onChange={(e) => setNewActivity({...newActivity, location: e.target.value})}
+                    placeholder="örn: Ankara Tenis Kulübü"
+                    className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Maksimum Katılımcı Sayısı</label>
+                <input
+                  type="number"
+                  min="2"
+                  max="50"
+                  value={newActivity.maxParticipants}
+                  onChange={(e) => setNewActivity({...newActivity, maxParticipants: e.target.value})}
+                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <button
+                onClick={handleCreateActivity}
+                className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center justify-center gap-2"
+              >
+                <Plus className="w-5 h-5" />
+                Aktivite Oluştur
+              </button>
+            </div>
+          </div>
+        )}
+
+        {currentView === 'profile' && (
+          <div className="bg-white rounded-2xl shadow-lg p-6">
+            <div className="text-center mb-6">
+              <div className="relative inline-block">
+                {currentUser.profileImage ? (
+                  <img 
+                    src={currentUser.profileImage} 
+                    alt="Profile" 
+                    className="w-24 h-24 rounded-full object-cover border-4 border-blue-100"
+                  />
+                ) : (
+                  <div className="text-6xl mb-4">{currentUser.avatar}</div>
+                )}
+                <label className="absolute bottom-0 right-0 bg-blue-600 text-white p-2 rounded-full cursor-pointer hover:bg-blue-700 transition-colors">
+                  <Camera className="w-4 h-4" />
+                  <input 
+                    type="file" 
+                    accept="image/*"
+                    onChange={handleProfileImageUpload}
+                    className="hidden" 
+                  />
+                </label>
+              </div>
+              <h2 className="text-2xl font-bold text-gray-900 mt-4">{currentUser.name}</h2>
+              <p className="text-gray-600 mt-2">{currentUser.email}</p>
+            </div>
+
+            <div className="space-y-4">
+              <div className="bg-gray-50 rounded-lg p-4">
+                <h3 className="font-semibold text-gray-800 mb-3">Bilgilerim</h3>
+                <p className="text-sm text-gray-700"><strong>Şehir:</strong> {currentUser.city}</p>
+                <p className="text-sm text-gray-700"><strong>Doğum Tarihi:</strong> {currentUser.birthDate}</p>
+              </div>
+
+              <div className="bg-gray-50 rounded-lg p-4">
+                <h3 className="font-semibold text-gray-800 mb-3">İstatistiklerim</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="text-center">
+                    <p className="text-2xl font-bold text-blue-600">
+                      {activities.filter(a => a.createdBy.id === currentUser.id).length}
+                    </p>
+                    <p className="text-sm text-gray-600">Oluşturduğum</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-2xl font-bold text-green-600">
+                      {activities.filter(a => a.participants.some(p => p.id === currentUser.id)).length}
+                    </p>
+                    <p className="text-sm text-gray-600">Katıldığım</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-gray-50 rounded-lg p-4">
+                <h3 className="font-semibold text-gray-800 mb-3">Yaklaşan Aktivitelerim</h3>
+                {activities
+                  .filter(a => a.participants.some(p => p.id === currentUser.id))
+                  .slice(0, 3)
+                  .map(activity => (
+                    <div key={activity.id} className="flex justify-between items-center py-2 border-b last:border-0">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xl">{sportEmojis[activity.sport]}</span>
+                        <div>
+                          <p className="font-medium text-gray-800">{activity.title}</p>
+                          <p className="text-sm text-gray-600">{activity.date} - {activity.time}</p>
+                        </div>
+                      </div>
+                      <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">
+                        {activity.sport}
+                      </span>
+                    </div>
+                  ))}
+              </div>
+
+              <div className="bg-gray-50 rounded-lg p-4">
+                <h3 className="font-semibold text-gray-800 mb-3">Favori Sporlarım</h3>
+                <div className="flex flex-wrap gap-2">
+                  {currentUser.favoriteSports.map((sport) => (
+                    <div key={sport} className="flex items-center gap-1 bg-white px-3 py-2 rounded-full border">
+                      <span className="text-lg">{sportEmojis[sport]}</span>
+                      <span className="text-sm font-medium">{sport}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
-}
+};
+
+export default SportsApp;
+
