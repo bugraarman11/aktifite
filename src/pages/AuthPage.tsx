@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { User, Mail, Lock, Calendar, MapPin, Heart, ChevronRight, Eye, EyeOff, Check } from "lucide-react";
 
 type SportEmojis = {
@@ -102,6 +103,7 @@ const AuthPage: React.FC = () => {
   const [formData, setFormData] = useState<AuthForm>(INITIAL_FORM);
   const [loginData, setLoginData] = useState<LoginForm>(INITIAL_LOGIN);
   const [errors, setErrors] = useState<Errors>(INITIAL_ERRORS);
+  const navigate = useNavigate();
 
   const handleInputChange = (field: TextField, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -206,11 +208,8 @@ const AuthPage: React.FC = () => {
       setErrors((prev) => ({ ...prev, favoriteSports: "En az bir spor seçmelisiniz" }));
       return;
     }
-    // Demo: başarılı kayıt
-    alert("Kayıt başarılı! AKTİFİTE'ye hoş geldiniz! 🎉");
-    // İstersen aşağıyı açıp fake login yapabilirsin:
-    // localStorage.setItem("token", "ok");
-    // window.location.href = "/app";
+    localStorage.setItem("token", "ok");
+    navigate("/app");
   };
 
   const handleLogin = () => {
