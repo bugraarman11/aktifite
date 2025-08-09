@@ -21,9 +21,11 @@ import {
   Send,
   Camera,
   Inbox,
-  ArrowLeft
+  ArrowLeft,
+  LogOut
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/lib/supabase';
 
 const SportsApp = () => {
   const navigate = useNavigate();
@@ -48,6 +50,13 @@ const SportsApp = () => {
       navigate('/');
     }
   }, [navigate]);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    navigate('/', { replace: true });
+  };
 
   const sportEmojis = {
     'Tenis': '🎾',
@@ -672,6 +681,13 @@ const SportsApp = () => {
                 )}
                 <span className="font-medium text-gray-800 text-xs sm:text-base hidden sm:inline">{currentUser.name}</span>
               </div>
+              <button
+                onClick={handleLogout}
+                className="flex items-center gap-1 p-1.5 sm:p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <LogOut className="w-5 h-5 sm:w-6 sm:h-6 text-gray-700" />
+                <span className="hidden sm:inline text-gray-700">Çıkış</span>
+              </button>
             </div>
           </div>
         </header>
