@@ -184,90 +184,41 @@ const SportsApp = () => {
     }
   ]);
 
-  const [activities, setActivities] = useState([
-    {
-      id: 1,
-      sport: 'Tenis',
-      title: 'Sabah Tenis Maçı',
-      date: '2025-02-10',
-      time: '09:00',
-      location: 'Ankara Tenis Kulübü',
-      city: 'Ankara',
-      maxParticipants: 4,
-      currentParticipants: 2,
-      createdBy: { id: 2, name: 'Ayşe Kaya', avatar: '👩' },
-      participants: [{ id: 2, name: 'Ayşe Kaya', avatar: '👩' }],
-      requests: [{ id: 3, name: 'Ali Demir', avatar: '👨', status: 'pending' }],
-      description: 'Orta seviye tenis maçı, raket getirilmeli'
-    },
-    {
-      id: 2,
-      sport: 'Basketbol',
-      title: '3v3 Basketbol',
-      date: '2025-02-12',
-      time: '18:00',
-      location: 'Kadıköy Spor Salonu',
-      city: 'İstanbul (Asya)',
-      maxParticipants: 6,
-      currentParticipants: 4,
-      createdBy: { id: 1, name: 'Mehmet Yılmaz', avatar: '👤' },
-      participants: [
-        { id: 1, name: 'Mehmet Yılmaz', avatar: '👤' },
-        { id: 4, name: 'Can Öz', avatar: '🧑' },
-        { id: 5, name: 'Zeynep Ak', avatar: '👩‍🦰' },
-        { id: 6, name: 'Emre Yıldız', avatar: '👨‍🦱' }
-      ],
-      requests: [
-        { id: 7, name: 'Selin Güneş', avatar: '👩‍🦳', status: 'pending' },
-        { id: 8, name: 'Burak Ay', avatar: '🧔', status: 'pending' }
-      ],
-      description: 'Dostane 3v3 basketbol maçı'
-    },
-    {
-      id: 3,
-      sport: 'Yoga',
-      title: 'Sabah Yoga Seansı',
-      date: '2025-02-11',
-      time: '07:00',
-      location: 'Maçka Parkı',
-      city: 'İstanbul (Avrupa)',
-      maxParticipants: 10,
-      currentParticipants: 6,
-      createdBy: { id: 9, name: 'Elif Yılmaz', avatar: '👩‍🦱' },
-      participants: [
-        { id: 9, name: 'Elif Yılmaz', avatar: '👩‍🦱' },
-        { id: 10, name: 'Merve Kara', avatar: '👩' },
-        { id: 11, name: 'Ahmet Şen', avatar: '👨' },
-        { id: 12, name: 'Ceren Ak', avatar: '👩‍🦰' },
-        { id: 13, name: 'Murat Can', avatar: '🧔' }
-      ],
-      requests: [],
-      description: 'Hatha yoga seansı, mat getirilmeli'
-    },
-    {
-      id: 4,
-      sport: 'Futbol',
-      title: 'Halı Saha Maçı',
-      date: '2025-02-13',
-      time: '20:00',
-      location: 'Bornova Halı Saha',
-      city: 'İzmir',
-      maxParticipants: 10,
-      currentParticipants: 7,
-      createdBy: { id: 14, name: 'Kaan Yıldırım', avatar: '👨‍🦱' },
-      participants: [
-        { id: 14, name: 'Kaan Yıldırım', avatar: '👨‍🦱' },
-        { id: 15, name: 'Arda Turan', avatar: '🧔' },
-        { id: 16, name: 'Selim Ak', avatar: '👨' },
-        { id: 17, name: 'Mert Can', avatar: '👦' },
-        { id: 18, name: 'Cem Yılmaz', avatar: '👨‍🦲' },
-        { id: 19, name: 'Ozan Kabak', avatar: '🧑' },
-        { id: 20, name: 'Barış Alper', avatar: '👨‍🦰' }
-      ],
-      requests: [],
-      description: '5v5 halı saha maçı, forma getirilmeli'
-    }
-  ]);
+  const [activities, setActivities] = useState([]);
+
+  useEffect(() => {
+    const fetchActivities = async () => {
+      const { data, error } = await supabase
+        .from('activities')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Aktiviteler alınamadı:', error);
+        return;
+      }
+
+      const mapped = data.map((act) => ({
+        id: act.id,
+        sport: act.sport_type,
+        title: act.title,
+        date: act.date,
+        time: act.time,
+        location: act.location,
+        city: act.city,
+        maxParticipants: act.max_participants,
+        currentParticipants: 1,
+        createdBy: { id: act.organizer_id, name: 'Organizatör', avatar: '👤' },
+        participants: [],
+        requests: [],
+        description: act.description || ''
+      }));
+
+      setActivities(mapped);
+    };
+
+    fetchActivities();
+  }, []);
 
   const [filterSport, setFilterSport] = useState('all');
   const [filterCity, setFilterCity] = useState('all');
@@ -354,20 +305,47 @@ const SportsApp = () => {
     setNewMessage('');
   };
 
-  const handleCreateActivity = () => {
+  const handleCreateActivity = async () => {
     if (!newActivity.title || !newActivity.date || !newActivity.time || !newActivity.location) {
       alert('Lütfen tüm gerekli alanları doldurun!');
       return;
     }
 
+    const { data, error } = await supabase
+      .from('activities')
+      .insert({
+        organizer_id: currentUser.id,
+        sport_type: newActivity.sport,
+        title: newActivity.title,
+        description: newActivity.description,
+        date: newActivity.date,
+        time: newActivity.time,
+        city: newActivity.city,
+        location: newActivity.location,
+        max_participants: parseInt(newActivity.maxParticipants)
+      })
+      .select('*')
+      .single();
+
+    if (error) {
+      console.error('Aktivite oluşturulamadı:', error);
+      return;
+    }
+
     const activity = {
-      id: activities.length + 1,
-      ...newActivity,
+      id: data.id,
+      sport: data.sport_type,
+      title: data.title,
+      date: data.date,
+      time: data.time,
+      location: data.location,
+      city: data.city,
+      maxParticipants: data.max_participants,
       currentParticipants: 1,
       createdBy: currentUser,
       participants: [currentUser],
       requests: [],
-      maxParticipants: parseInt(newActivity.maxParticipants)
+      description: data.description || ''
     };
 
     setActivities([...activities, activity]);
@@ -375,11 +353,11 @@ const SportsApp = () => {
     const newNotification = {
       id: notifications.length + 1,
       type: 'activity_created',
-      message: `"${newActivity.title}" aktivitesi başarıyla oluşturuldu!`,
+      message: `"${activity.title}" aktivitesi başarıyla oluşturuldu!`,
       activityId: activity.id,
       read: false,
       timestamp: new Date().toISOString(),
-      sportEmoji: sportEmojis[newActivity.sport]
+      sportEmoji: sportEmojis[activity.sport]
     };
     setNotifications([newNotification, ...notifications]);
 
