@@ -46,14 +46,17 @@ const SportsApp = () => {
   const [selectedChat, setSelectedChat] = useState(null);
 
   useEffect(() => {
-    if (!localStorage.getItem('token')) {
-      navigate('/');
-    }
+    supabase.auth.getSession().then(({ data }) => {
+      if (!data.session) navigate('/', { replace: true });
+    });
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
+      if (!session) navigate('/', { replace: true });
+    });
+    return () => sub.subscription.unsubscribe();
   }, [navigate]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    localStorage.removeItem('token');
     localStorage.removeItem('user');
     navigate('/', { replace: true });
   };
