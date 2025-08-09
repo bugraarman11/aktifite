@@ -46,9 +46,33 @@ const SportsApp = () => {
   const [selectedChat, setSelectedChat] = useState(null);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      if (!data.session) navigate('/', { replace: true });
-    });
+    const loadProfile = async () => {
+      const { data } = await supabase.auth.getSession();
+      const session = data.session;
+      if (!session) {
+        navigate('/', { replace: true });
+        return;
+      }
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('full_name,email,city,birth_date,favorite_sports')
+        .eq('id', session.user.id)
+        .single();
+
+      const userData = {
+        name: profile?.full_name || '',
+        email: profile?.email || session.user.email || '',
+        city: profile?.city || '',
+        birthDate: profile?.birth_date || '',
+        favoriteSports: profile?.favorite_sports || [],
+      };
+      localStorage.setItem('user', JSON.stringify(userData));
+      setCurrentUser((prev) => ({ ...prev, ...userData, id: session.user.id }));
+    };
+
+    loadProfile();
+
     const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
       if (!session) navigate('/', { replace: true });
     });
