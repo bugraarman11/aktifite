@@ -80,7 +80,11 @@ const SportsApp = () => {
   }, [navigate]);
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      console.error('Çıkış başarısız:', error);
+      await supabase.auth.signOut({ scope: 'local' });
+    }
     localStorage.removeItem('user');
     navigate('/', { replace: true });
   };
