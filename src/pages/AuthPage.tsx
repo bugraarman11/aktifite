@@ -240,10 +240,25 @@ const AuthPage: React.FC = () => {
             id: user.id,
             username: formData.name?.trim() || null,
             full_name: formData.name?.trim() || null,
+            email: formData.email,
+            city: formData.city,
+            birth_date: formData.birthDate,
+            favorite_sports: formData.favoriteSports,
           },
           { onConflict: "id" }
         );
       if (profErr) return alert(profErr.message);
+
+      localStorage.setItem(
+        "user",
+        JSON.stringify({
+          name: formData.name,
+          email: formData.email,
+          city: formData.city,
+          birthDate: formData.birthDate,
+          favoriteSports: formData.favoriteSports,
+        })
+      );
     }
 
     navigate("/app", { replace: true });
@@ -265,17 +280,23 @@ const AuthPage: React.FC = () => {
     // Giriş başarılı → user var
     const user = data.user;
     if (user) {
-      const { error: profErr } = await supabase
+      const { data: profile, error: profErr } = await supabase
         .from("profiles")
-        .upsert(
-          {
-            id: user.id,
-            username: formData.name?.trim() || null,
-            full_name: formData.name?.trim() || null,
-          },
-          { onConflict: "id" }
-        );
+        .select("full_name,email,city,birth_date,favorite_sports")
+        .eq("id", user.id)
+        .single();
       if (profErr) return alert(profErr.message);
+
+      localStorage.setItem(
+        "user",
+        JSON.stringify({
+          name: profile?.full_name || "",
+          email: profile?.email || user.email || "",
+          city: profile?.city || "",
+          birthDate: profile?.birth_date || "",
+          favoriteSports: profile?.favorite_sports || [],
+        })
+      );
     }
 
     navigate("/app", { replace: true });
