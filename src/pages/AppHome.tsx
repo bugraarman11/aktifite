@@ -190,7 +190,7 @@ const SportsApp = () => {
     const fetchActivities = async () => {
       const { data, error } = await supabase
         .from('activities')
-        .select('*')
+        .select(`*, participants:activity_participants(user_id, profiles(full_name))`)
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -207,9 +207,13 @@ const SportsApp = () => {
         location: act.location,
         city: act.city,
         maxParticipants: act.max_participants,
-        currentParticipants: 1,
+        currentParticipants: act.participants?.length || 0,
         createdBy: { id: act.organizer_id, name: 'Organizatör', avatar: '👤' },
-        participants: [],
+        participants: (act.participants || []).map((p) => ({
+          id: p.user_id,
+          name: p.profiles?.full_name || 'Kullanıcı',
+          avatar: '👤'
+        })),
         requests: [],
         description: act.description || ''
       }));
@@ -332,6 +336,14 @@ const SportsApp = () => {
       return;
     }
 
+    const { error: participantError } = await supabase
+      .from('activity_participants')
+      .insert({ activity_id: data.id, user_id: currentUser.id });
+
+    if (participantError) {
+      console.error('Organizatör katılımcı olarak eklenemedi:', participantError);
+    }
+
     const activity = {
       id: data.id,
       sport: data.sport_type,
@@ -404,9 +416,18 @@ const SportsApp = () => {
     }));
   };
 
-  const handleAcceptRequest = (activityId, userId) => {
+  const handleAcceptRequest = async (activityId, userId) => {
     const activity = activities.find(a => a.id === activityId);
     const user = activity.requests.find(r => r.id === userId);
+
+    const { error: participantError } = await supabase
+      .from('activity_participants')
+      .insert({ activity_id: activityId, user_id: userId });
+
+    if (participantError) {
+      console.error('Katılımcı eklenemedi:', participantError);
+      return;
+    }
 
     setActivities(activities.map(act => {
       if (act.id === activityId) {
