@@ -1,6 +1,7 @@
-import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { User, Mail, Lock, Calendar, MapPin, Heart, ChevronRight, Eye, EyeOff, Check } from "lucide-react";
+import { supabase } from "@/lib/supabase";
+import { useState, useEffect } from "react";
 
 type SportEmojis = {
   Tenis: string;
@@ -96,6 +97,7 @@ const validateEmail = (email: string) => {
 type TextField = Exclude<keyof AuthForm, "favoriteSports">;
 
 const AuthPage: React.FC = () => {
+  // ---- state'ler
   const [isLogin, setIsLogin] = useState<boolean>(false);
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1);
@@ -103,13 +105,26 @@ const AuthPage: React.FC = () => {
   const [formData, setFormData] = useState<AuthForm>(INITIAL_FORM);
   const [loginData, setLoginData] = useState<LoginForm>(INITIAL_LOGIN);
   const [errors, setErrors] = useState<Errors>(INITIAL_ERRORS);
+
   const navigate = useNavigate();
 
+  // ---- oturum varsa /app'e at
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      if (data.session) navigate("/app", { replace: true });
+    });
+
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
+      if (session) navigate("/app", { replace: true });
+    });
+
+    return () => sub.subscription.unsubscribe();
+  }, [navigate]);
+
+  // ---- helpers
   const handleInputChange = (field: TextField, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
-    if (errors[field]) {
-      setErrors((prev) => ({ ...prev, [field]: "" }));
-    }
+    if (errors[field]) setErrors((prev) => ({ ...prev, [field]: "" }));
   };
 
   const handleSportToggle = (sport: Sport) => {
@@ -120,9 +135,7 @@ const AuthPage: React.FC = () => {
         ? prev.favoriteSports.filter((s) => s !== sport)
         : [...prev.favoriteSports, sport],
     }));
-    if (errors.favoriteSports) {
-      setErrors((prev) => ({ ...prev, favoriteSports: "" }));
-    }
+    if (errors.favoriteSports) setErrors((prev) => ({ ...prev, favoriteSports: "" }));
   };
 
   const validateStep1 = (): boolean => {
@@ -203,24 +216,69 @@ const AuthPage: React.FC = () => {
     }
   };
 
-  const handleRegister = () => {
+  // ---- KAYIT: signUp → profiles.upsert → /app
+  const handleRegister = async () => {
     if (formData.favoriteSports.length === 0) {
       setErrors((prev) => ({ ...prev, favoriteSports: "En az bir spor seçmelisiniz" }));
       return;
     }
-    localStorage.setItem("token", "ok");
-    localStorage.setItem("user", JSON.stringify(formData));
-    navigate("/app");
+    if (!validateStep1() || !validateStep2()) return;
+
+    const { data: signup, error: signUpErr } = await supabase.auth.signUp({
+      email: formData.email,
+      password: formData.password,
+      options: { data: { name: formData.name } },
+    });
+    if (signUpErr) return alert(signUpErr.message);
+
+    const user = signup.user;
+    if (user) {
+      const { error: profErr } = await supabase
+        .from("profiles")
+        .upsert(
+          {
+            id: user.id,
+            username: formData.name?.trim() || null,
+            full_name: formData.name?.trim() || null,
+          },
+          { onConflict: "id" }
+        );
+      if (profErr) return alert(profErr.message);
+    }
+
+    navigate("/app", { replace: true });
   };
 
-  const handleLogin = () => {
+  // ---- GİRİŞ: signInWithPassword → (emin olmak için) profiles.upsert → /app
+  const handleLogin = async () => {
     if (!loginData.email || !loginData.password) {
       alert("Lütfen email ve şifrenizi girin");
       return;
     }
-    alert("Giriş başarılı!");
-    // localStorage.setItem("token", "ok");
-    // window.location.href = "/app";
+
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: loginData.email,
+      password: loginData.password,
+    });
+    if (error) return alert(error.message);
+
+    // Giriş başarılı → user var
+    const user = data.user;
+    if (user) {
+      const { error: profErr } = await supabase
+        .from("profiles")
+        .upsert(
+          {
+            id: user.id,
+            username: formData.name?.trim() || null,
+            full_name: formData.name?.trim() || null,
+          },
+          { onConflict: "id" }
+        );
+      if (profErr) return alert(profErr.message);
+    }
+
+    navigate("/app", { replace: true });
   };
 
   return (
