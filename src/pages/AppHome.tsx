@@ -207,7 +207,8 @@ const SportsApp = () => {
         sport: act.sport_type,
         title: act.title,
         date: act.date,
-        time: act.time,
+        startTime: act.start_time,
+        endTime: act.end_time,
         location: act.location,
         city: act.city,
         maxParticipants: act.max_participants,
@@ -236,7 +237,8 @@ const SportsApp = () => {
     sport: 'Tenis',
     title: '',
     date: '',
-    time: '',
+    startTime: '',
+    endTime: '',
     location: '',
     city: 'Ankara',
     maxParticipants: 2,
@@ -314,8 +316,13 @@ const SportsApp = () => {
   };
 
   const handleCreateActivity = async () => {
-    if (!newActivity.title || !newActivity.date || !newActivity.time || !newActivity.location) {
+    if (!newActivity.title || !newActivity.date || !newActivity.startTime || !newActivity.endTime || !newActivity.location) {
       alert('Lütfen tüm gerekli alanları doldurun!');
+      return;
+    }
+
+    if (newActivity.startTime >= newActivity.endTime) {
+      alert('Başlangıç saati bitiş saatinden önce olmalıdır!');
       return;
     }
 
@@ -327,7 +334,8 @@ const SportsApp = () => {
         title: newActivity.title,
         description: newActivity.description,
         date: newActivity.date,
-        time: newActivity.time,
+        start_time: newActivity.startTime,
+        end_time: newActivity.endTime,
         city: newActivity.city,
         location: newActivity.location,
         max_participants: parseInt(newActivity.maxParticipants)
@@ -353,7 +361,8 @@ const SportsApp = () => {
       sport: data.sport_type,
       title: data.title,
       date: data.date,
-      time: data.time,
+      startTime: data.start_time,
+      endTime: data.end_time,
       location: data.location,
       city: data.city,
       maxParticipants: data.max_participants,
@@ -381,7 +390,8 @@ const SportsApp = () => {
       sport: 'Tenis',
       title: '',
       date: '',
-      time: '',
+      startTime: '',
+      endTime: '',
       location: '',
       city: 'Ankara',
       maxParticipants: 2,
@@ -550,7 +560,7 @@ const SportsApp = () => {
           </div>
           <div className="flex items-center gap-2">
             <Clock className="w-3 h-3 sm:w-4 sm:h-4 text-gray-500" />
-            <span className="text-xs sm:text-sm">{activity.time}</span>
+            <span className="text-xs sm:text-sm">{`${activity.startTime} - ${activity.endTime}`}</span>
           </div>
           <div className="flex items-center gap-2">
             <MapPin className="w-3 h-3 sm:w-4 sm:h-4 text-gray-500" />
@@ -1041,14 +1051,31 @@ const SportsApp = () => {
                     className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
-                <div>
-                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">Saat</label>
-                  <input
-                    type="time"
-                    value={newActivity.time}
-                    onChange={(e) => setNewActivity({...newActivity, time: e.target.value})}
-                    className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-blue-500"
-                  />
+                <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                  <div>
+                    <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">Başlangıç Saati</label>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]{2}:[0-9]{2}"
+                      placeholder="örn: 09:00"
+                      value={newActivity.startTime}
+                      onChange={(e) => setNewActivity({...newActivity, startTime: e.target.value})}
+                      className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">Bitiş Saati</label>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]{2}:[0-9]{2}"
+                      placeholder="örn: 10:30"
+                      value={newActivity.endTime}
+                      onChange={(e) => setNewActivity({...newActivity, endTime: e.target.value})}
+                      className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -1163,7 +1190,7 @@ const SportsApp = () => {
                         <span className="text-xl">{sportEmojis[activity.sport]}</span>
                         <div>
                           <p className="font-medium text-gray-800">{activity.title}</p>
-                          <p className="text-sm text-gray-600">{activity.date} - {activity.time}</p>
+                          <p className="text-sm text-gray-600">{activity.date} - {`${activity.startTime} - ${activity.endTime}`}</p>
                         </div>
                       </div>
                       <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">
