@@ -211,6 +211,7 @@ const SportsApp = () => {
         endTime: act.end_time,
         location: act.location,
         city: act.city,
+        district: act.district,
         maxParticipants: act.max_participants,
         currentParticipants: act.participants?.length || 0,
         createdBy: { id: act.organizer_id, name: 'Organizatör', avatar: '👤' },
@@ -231,6 +232,7 @@ const SportsApp = () => {
 
   const [filterSport, setFilterSport] = useState('all');
   const [filterCity, setFilterCity] = useState('all');
+  const [filterDistrict, setFilterDistrict] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
 
   const [newActivity, setNewActivity] = useState({
@@ -240,10 +242,18 @@ const SportsApp = () => {
     startTime: '',
     endTime: '',
     location: '',
-    city: 'Ankara',
+    city: currentUser.city || 'Ankara',
+    district: '',
     maxParticipants: 2,
     description: ''
   });
+
+  useEffect(() => {
+    setNewActivity(prev => ({
+      ...prev,
+      city: currentUser.city || prev.city
+    }));
+  }, [currentUser.city]);
 
   const unreadNotifications = notifications.filter(n => !n.read).length;
 
@@ -316,7 +326,7 @@ const SportsApp = () => {
   };
 
   const handleCreateActivity = async () => {
-    if (!newActivity.title || !newActivity.date || !newActivity.startTime || !newActivity.endTime || !newActivity.location) {
+    if (!newActivity.title || !newActivity.date || !newActivity.startTime || !newActivity.endTime || !newActivity.location || !newActivity.district) {
       alert('Lütfen tüm gerekli alanları doldurun!');
       return;
     }
@@ -336,7 +346,8 @@ const SportsApp = () => {
         date: newActivity.date,
         start_time: newActivity.startTime,
         end_time: newActivity.endTime,
-        city: newActivity.city,
+        city: currentUser.city || newActivity.city,
+        district: newActivity.district,
         location: newActivity.location,
         max_participants: parseInt(newActivity.maxParticipants)
       })
@@ -365,6 +376,7 @@ const SportsApp = () => {
       endTime: data.end_time,
       location: data.location,
       city: data.city,
+      district: data.district,
       maxParticipants: data.max_participants,
       currentParticipants: 1,
       createdBy: currentUser,
@@ -393,7 +405,8 @@ const SportsApp = () => {
       startTime: '',
       endTime: '',
       location: '',
-      city: 'Ankara',
+      city: currentUser.city || 'Ankara',
+      district: '',
       maxParticipants: 2,
       description: ''
     });
@@ -518,13 +531,35 @@ const SportsApp = () => {
     return date.toLocaleDateString('tr-TR');
   };
 
+  const cityOptions = React.useMemo(() => {
+    const dynamicCities = activities.map(a => a.city).filter(Boolean);
+    const set = new Set([...cities, ...dynamicCities]);
+    if (currentUser.city) set.add(currentUser.city);
+    return Array.from(set);
+  }, [activities, currentUser.city]);
+
+  const districtOptions = React.useMemo(() => {
+    const relatedActivities = filterCity === 'all'
+      ? activities
+      : activities.filter(activity => activity.city === filterCity);
+    const districts = relatedActivities.map(a => a.district).filter(Boolean);
+    return Array.from(new Set(districts));
+  }, [activities, filterCity]);
+
+  useEffect(() => {
+    if (filterDistrict !== 'all' && !districtOptions.includes(filterDistrict)) {
+      setFilterDistrict('all');
+    }
+  }, [districtOptions, filterDistrict]);
+
   const filteredActivities = activities.filter(activity => {
     const matchesSport = filterSport === 'all' || activity.sport === filterSport;
     const matchesCity = filterCity === 'all' || activity.city === filterCity;
+    const matchesDistrict = filterDistrict === 'all' || activity.district === filterDistrict;
     const matchesSearch = activity.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           activity.sport.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           activity.location.toLowerCase().includes(searchTerm.toLowerCase());
-    return matchesSport && matchesCity && matchesSearch;
+    return matchesSport && matchesCity && matchesDistrict && matchesSearch;
   });
 
   const ActivityCard = ({ activity }) => {
@@ -562,10 +597,14 @@ const SportsApp = () => {
             <Clock className="w-3 h-3 sm:w-4 sm:h-4 text-gray-500" />
             <span className="text-xs sm:text-sm">{`${activity.startTime} - ${activity.endTime}`}</span>
           </div>
-          <div className="flex items-center gap-2">
-            <MapPin className="w-3 h-3 sm:w-4 sm:h-4 text-gray-500" />
-            <span className="text-xs sm:text-sm">{activity.location}</span>
-            <span className="text-[10px] sm:text-xs text-gray-500">({activity.city})</span>
+          <div className="flex items-start sm:items-center gap-2">
+            <MapPin className="w-3 h-3 sm:w-4 sm:h-4 text-gray-500 mt-0.5 sm:mt-0" />
+            <div className="flex flex-col sm:flex-row sm:items-center sm:gap-2">
+              <span className="text-xs sm:text-sm">{activity.location}</span>
+              <span className="text-[10px] sm:text-xs text-gray-500">
+                {activity.district ? `${activity.district} / ${activity.city}` : activity.city}
+              </span>
+            </div>
           </div>
           <div className="flex items-center gap-2">
             <Users className="w-3 h-3 sm:w-4 sm:h-4 text-gray-500" />
@@ -776,15 +815,28 @@ const SportsApp = () => {
                     className="w-full pl-9 sm:pl-10 pr-3 sm:pr-4 py-2 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-2 flex-wrap sm:flex-nowrap">
                   <select
                     value={filterCity}
-                    onChange={(e) => setFilterCity(e.target.value)}
+                    onChange={(e) => {
+                      setFilterCity(e.target.value);
+                      setFilterDistrict('all');
+                    }}
                     className="flex-1 sm:flex-none px-3 sm:px-4 py-2 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   >
                     <option value="all">Tüm Şehirler</option>
-                    {cities.map(city => (
+                    {cityOptions.map(city => (
                       <option key={city} value={city}>{city}</option>
+                    ))}
+                  </select>
+                  <select
+                    value={filterDistrict}
+                    onChange={(e) => setFilterDistrict(e.target.value)}
+                    className="flex-1 sm:flex-none px-3 sm:px-4 py-2 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="all">Tüm İlçeler</option>
+                    {districtOptions.map(district => (
+                      <option key={district} value={district}>{district}</option>
                     ))}
                   </select>
                   <select
@@ -1082,26 +1134,31 @@ const SportsApp = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
                   <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">Şehir</label>
-                  <select
-                    value={newActivity.city}
-                    onChange={(e) => setNewActivity({...newActivity, city: e.target.value})}
-                    className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-blue-500"
-                  >
-                    {cities.map(city => (
-                      <option key={city} value={city}>{city}</option>
-                    ))}
-                  </select>
+                  <div className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border rounded-lg bg-gray-50 text-gray-700">
+                    {currentUser.city || 'Şehir bilgisi bulunamadı'}
+                  </div>
                 </div>
                 <div>
-                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">Konum</label>
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">İlçe</label>
                   <input
                     type="text"
-                    value={newActivity.location}
-                    onChange={(e) => setNewActivity({...newActivity, location: e.target.value})}
-                    placeholder="örn: Ankara Tenis Kulübü"
+                    value={newActivity.district}
+                    onChange={(e) => setNewActivity({...newActivity, district: e.target.value})}
+                    placeholder="örn: Çankaya"
                     className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
+              </div>
+
+              <div>
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">Konum</label>
+                <input
+                  type="text"
+                  value={newActivity.location}
+                  onChange={(e) => setNewActivity({...newActivity, location: e.target.value})}
+                  placeholder="örn: Ankara Tenis Kulübü"
+                  className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-blue-500"
+                />
               </div>
 
               <div>
